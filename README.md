@@ -11,17 +11,19 @@
 
 ---
 
-## Architecture Summary
+## Promotion Lifecycle
 
-This repository documents an enterprise-grade CI/CD promotion pipeline implemented using:
+This pipeline enforces a structured promotion model across **DEV → UAT → PROD**.
 
-- **GitHub Actions** for CI orchestration  
-- **Self-hosted and COE runners** for environment isolation  
-- **JFrog Artifactory** for artifact management  
-- **HashiCorp Vault** for centralized secret retrieval  
-- **ServiceNow** for formal change approval governance  
+- Developers work in `feature/*` branches with CI validation  
+- Changes merge into `dev` for integration testing  
+- Selected releases are cherry-picked and tagged into `uat`  
+- Self-hosted runners build immutable artifacts  
+- Artifacts are stored in **JFrog Artifactory**  
+- Deployment requires **ServiceNow approval**  
+- COE runners execute controlled releases to UAT and PROD  
 
-The model follows a structured promotion lifecycle across **Development (DEV), User Acceptance Testing (UAT), and Production (PROD)** environments.
+The architecture separates build from deployment, enforces approval gates, and ensures traceable artifact promotion across environments.
 
 ---
 
