@@ -1,0 +1,38 @@
+name: Databricks - Build (Multi-Environment)
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+    outputs:
+      build-package-name:
+        description: "Generated build package name"
+        value: ${{ jobs.build.outputs.build-package-name }}
+
+jobs:
+  build:
+    runs-on: linux-${{ inputs.environment }}
+    environment: ${{ inputs.environment }}
+
+    container:
+      image: ${{ vars.DOCKER_REGISTRY }}/databricks-cli:latest
+      credentials:
+        username: ${{ secrets.ARTIFACTORY_IMAGE_PULL_USER }}
+        password: ${{ secrets.ARTIFACTORY_IMAGE_PULL_PASS }}
+
+    permissions:
+      id-token: write
+      contents: read
+
+    env:
+      ARTIFACTORY_ENV: ${{ inputs.environment }}
+      ARTIFACTORY_USER: artifact-publisher-${{ inputs.environment }}
+      ARTIFACTORY_REPO: databricks-bundles-${{ inputs.environment }}
+
+    outputs:
+      build-package-name: $

@@ -1,0 +1,46 @@
+name: Build Databricks CLI Docker Image
+
+on:
+  push:
+    branches:
+      - main
+  workflow_call:
+    inputs:
+      environment:
+        description: Deployment environment name (e.g., dev, uat, prod)
+        required: true
+        type: string
+    secrets:
+      DOCKER_REGISTRY_USERNAME:
+        required: true
+      DOCKER_REGISTRY_PASSWORD:
+        required: true
+
+jobs:
+  build:
+    runs-on: linux-dev
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker registry
+        run: |
+          echo "${{ secrets.DOCKER_REGISTRY_PASSWORD }}" | docker login "${{ vars.DOCKER_REGISTRY }}" -u "${{ secrets.DOCKER_REGISTRY_USERNAME }}" --password-stdin
+
+      - name: Build Docker image
+        run: |
+          docker build -t databricks-cli:latest .
+
+      - name: Tag image for registry
+        run: |
+          docker tag databricks-cli:latest "${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_IMAGE_PATH }}:latest"
+
+      - name: Push image to registry
+        run: |
+          docker push "${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_IMAGE_PATH }}:latest"
+
+      - name: Show image details
+        run: |
+          docker images

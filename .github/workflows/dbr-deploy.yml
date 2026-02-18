@@ -1,0 +1,63 @@
+name: Databricks - Deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      build-package-name:
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: linux-${{ inputs.environment }}
+    environment: ${{ inputs.environment }}
+
+    permissions:
+      id-token: write
+      contents: read
+
+    env:
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST_${{ inputs.environment }} }}
+      ARTIFACTORY_REPO: databricks-bundles-${{ inputs.environment }}
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Retrieve secrets from Vault
+        id: secrets
+        uses: hashicorp/vault-action@v2
+        with:
+          url: ${{ vars.VAULT_URL }}
+          method: jwt
+          role: github-${{ inputs.environment }}
+          secrets: |
+            secret/data/artifactory token | ARTIFACTORY_TOKEN
+            secret/data/databricks token | DATABRICKS_TOKEN
+
+      - name: Download package from Artifactory
+        run: |
+          curl -H "Authorization: Bearer ${{ steps.secrets.outputs.ARTIFACTORY_TOKEN }}" \
+            -o "${{ inputs.build-package-name }}" \
+            "${{ vars.ARTIFACTORY_URL }}/${{ env.ARTIFACTORY_REPO }}/${{ inputs.build-package-name }}"
+
+          unzip -o "${{ inputs.build-package-name }}"
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.10
+
+      - name: Set up Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Deploy Notebooks / Jobs
+        env:
+          DATABRICKS_TOKEN: ${{ steps.secrets.outputs.DATABRICKS_TOKEN }}
+        run: |
+          databricks workspace import-dir src/notebooks /Shared/notebooks --overwrite
+          # Add additional deployment commands as required

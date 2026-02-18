@@ -1,0 +1,32 @@
+name: Create Version
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: Optional explicit version to use (e.g., 1.2.3 or rel-20260204.1). If blank, workflow generates one.
+        required: false
+        type: string
+    outputs:
+      version:
+        description: Generated version string
+        value: ${{ jobs.version.outputs.version }}
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.set_version.outputs.version }}
+
+    steps:
+      - name: Generate version
+        id: set_version
+        shell: bash
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="v$(date -u +%Y.%m.%d).${GITHUB_RUN_NUMBER}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Computed version: $VERSION"

@@ -1,0 +1,37 @@
+name: Build & Deploy Databricks
+
+on:
+  push:
+    branches:
+      - dev
+      - uat
+      - main
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  version:
+    name: Create Version
+    uses: ./.github/workflows/version-create.yml
+    secrets: inherit
+
+  build:
+    name: Build
+    needs: version
+    uses: ./.github/workflows/dbr-build.yml
+    with:
+      version: ${{ needs.version.outputs.version }}
+      environment: ${{ github.ref_name }}
+    secrets: inherit
+
+  deploy:
+    name: Deploy Databricks
+    needs: build
+    uses: ./.github/workflows/dbr-deploy.yml
+    with:
+      environment: ${{ github.ref_name }}
+      build-package-name: ${{ needs.build.outputs.build-package-name }}
+    secrets: inherit
