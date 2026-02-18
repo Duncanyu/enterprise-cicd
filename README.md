@@ -3,6 +3,14 @@
 
 ---
 
+## DIA-Datalake DevOps Process  
+Releasing to UAT and PROD with the same release  
+
+**Pro:** No re-deployment and low operational complexity  
+**Con:** Non-production-ready code can exist in `main`, but is not triggered without release tags  
+
+---
+
 ## System Architecture
 
 <p align="center">
@@ -13,19 +21,53 @@
 
 ## Promotion Lifecycle
 
-This pipeline enforces a structured promotion model across **DEV → UAT → PROD**.
+This pipeline implements a **single-branch promotion model** centered around `main`.
 
-- Developers work in `feature/*` branches with CI validation  
-- Changes merge into `dev` for integration testing  
-- Selected releases are cherry-picked and tagged into `uat`  
-- Self-hosted runners build immutable artifacts  
-- Artifacts are stored in **JFrog Artifactory**  
-- Deployment requires **ServiceNow approval**  
-- COE runners execute controlled releases to UAT and PROD  
+### 1. Feature Development
+- Developers create `feature/*` branches  
+- Pull Requests trigger CI validation (PR + CI + CD)  
+- Approved changes merge into `main`  
 
-The architecture separates build from deployment, enforces approval gates, and ensures traceable artifact promotion across environments.
+### 2. Continuous DEV Deployment
+- Every merge into `main` automatically deploys to **DEV**  
+- DEV acts as the continuous integration environment  
+
+### 3. Controlled UAT Release
+- A Git tag (e.g., `Tag-UAT-Release-01`) is created from `main`  
+- The tagged commit is deployed to **UAT**  
+- Business users sign off on selected features  
+
+### 4. Controlled PROD Release
+- A production tag (e.g., `Tag-Prod-Release-01`) is created from `main`  
+- The same tagged commit is deployed to **PROD**  
+- No rebuild is required; artifacts are promoted  
 
 ---
 
-## Promotion Lifecycle
+## Developer Interaction Flow
 
+<table>
+<tr>
+<td width="55%" valign="top">
+
+### Release Model Overview
+
+- Developers create `feature/*` branches  
+- Pull Requests trigger CI validation  
+- Approved changes merge into `main`  
+- DEV auto-deploys from `main`  
+- UAT releases are triggered via `Tag-UAT-*`  
+- PROD releases are triggered via `Tag-Prod-*`  
+- UAT requires business sign-off before PROD  
+
+This model ensures a single source of truth (`main`) while maintaining controlled environment promotion via tagging.
+
+</td>
+
+<td width="45%" align="center">
+
+<img src="assets/CICD-Developer_Interaction_Flow.png" width="100%"/>
+
+</td>
+</tr>
+</table>
