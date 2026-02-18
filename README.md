@@ -101,7 +101,7 @@ Progression is controlled through branch promotion and release ownership; there 
 
 <td width="45%" align="center">
 
-<img src="assets/CIC-DE_Interaction_Flow.png" width="100%"/>
+<img src="assets/CICD-DE_Interaction_Flow.png" width="100%"/>
 
 </td>
 </tr>
