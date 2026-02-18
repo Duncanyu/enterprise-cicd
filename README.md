@@ -98,7 +98,7 @@ Progression is controlled through tagging and release ownership, not branch isol
 
 <td width="45%" align="center">
 
-<img src="assets/CICD-DataEngineer_Interaction_Flow.png" width="100%"/>
+<img src="assets/CICD-DE_Interaction_Flow.png" width="100%"/>
 
 </td>
 </tr>
