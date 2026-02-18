@@ -67,3 +67,39 @@ This model ensures a single source of truth (`main`) while maintaining controlle
 </td>
 </tr>
 </table>
+
+---
+
+## Data Engineer Interaction Flow
+
+<table>
+<tr>
+<td width="55%" valign="top">
+
+### Release Progression Model
+
+- Multiple features may coexist in `main` simultaneously  
+- All merged features automatically deploy to **DEV**  
+- A subset of completed features is selected for UAT  
+- UAT represents a curated release candidate  
+- Only approved features progress to PROD  
+- Production releases are triggered via `Tag-Prod-*`  
+- Features not selected remain in `main`, but are not activated  
+
+This model reflects a **progressive funnel approach**:
+
+DEV (all merged work)  
+→ UAT (validated subset)  
+→ PROD (approved subset)
+
+Progression is controlled through tagging and release ownership, not branch isolation.
+
+</td>
+
+<td width="45%" align="center">
+
+<img src="assets/CICD-DataEngineer_Interaction_Flow.png" width="100%"/>
+
+</td>
+</tr>
+</table>
