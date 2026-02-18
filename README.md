@@ -9,15 +9,11 @@ Releasing to UAT and PROD with the same release
 **Pro:** No re-deployment and low operational complexity  
 **Con:** Non-production-ready code can exist in `main`, but is not triggered without release tags  
 
----
-
 ## System Architecture
 
 <p align="center">
   <img src="assets/CICD_Basic.png" width="1000"/>
 </p>
-
----
 
 ## Promotion Lifecycle
 
