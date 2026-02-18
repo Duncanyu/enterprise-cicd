@@ -1,0 +1,12 @@
+{
+	"name": "AzureBlobStorageDev",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureBlobStorage",
+		"typeProperties": {
+			"serviceEndpoint": "https://edpypfstorageaccount.blob.core.windows.net/",
+			"accountKind": "StorageV2"
+		}
+	}
+}

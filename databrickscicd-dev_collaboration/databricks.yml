@@ -1,0 +1,44 @@
+bundle:
+  name: databricks_cicd_bundle
+
+deployment_paths: &deployment_paths
+  root_path: /Workspace/main/databricks_cicd
+  file_path: /Workspace/main/databricks_cicd
+  artifact_path: /Workspace/main/databricks_cicd/deployment/artifacts
+  state_path: /Workspace/main/databricks_cicd/deployment/state
+
+variables:
+  env_name:
+    description: "Environment name (dev/uat/prod)"
+    default: dev
+    
+sync:
+  include:
+    - Notebooks/**
+  exclude:
+    - .github/**
+    - bundle_config/**
+    - .git/**
+    - README.md
+
+environments:
+  dev:
+    workspace:
+      <<: *deployment_paths
+    variables:
+      env_name: 
+        value: dev
+
+  uat:
+    workspace:
+      <<: *deployment_paths
+    variables:
+      env_name: 
+        value: uat
+
+  prod:
+    workspace:
+      <<: *deployment_paths
+    variables:
+      env_name: 
+        value: prod

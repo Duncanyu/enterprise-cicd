@@ -1,0 +1,15 @@
+{
+	"name": "edpypfadfdev",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned,UserAssigned",
+		"principalId": "056a4fca-324d-4e8c-b7cc-048284017cf8",
+		"tenantId": "0dd9e4ba-f74b-4523-9154-cc905e6dc85e",
+		"userAssignedIdentities": {
+			"/subscriptions/f7411cbe-ff49-4b44-8f43-b19f2cdd018f/resourcegroups/adf-cicd/providers/Microsoft.ManagedIdentity/userAssignedIdentities/ADF-UAMI": {
+				"clientId": "62b8b523-6780-41f4-b255-c36a935b3b0c",
+				"principalId": "0a8bd637-4f7c-498d-8d5b-3417dcd42f74"
+			}
+		}
+	}
+}

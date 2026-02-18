@@ -1,0 +1,27 @@
+resources:
+  jobs:
+    main_job:
+      name: "Main Job (Dev)"
+      job_clusters:
+        - job_cluster_key: dev_cluster
+          new_cluster:
+            spark_version: 14.3.x-scala2.12
+            node_type_id: Standard_D3_v2
+            num_workers: 2
+      tasks:
+        - task_key: notebook_task
+          notebook_task:
+            notebook_path: /Workspace/main/dev/databricks_cicd/Notebooks/testNotebook
+          job_cluster_key: dev_cluster
+
+  pipelines:
+    dlt_pipeline:
+      name: "DLT Pipeline (Dev)"
+      development: true
+      continuous: true
+      clusters:
+        - label: default
+          num_workers: 2
+      libraries:
+        - notebook: /Workspace/main/databricks_cicd/dev/dlt/pipeline_notebook
+        
