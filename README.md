@@ -1,13 +1,37 @@
 # Enterprise CI/CD Architecture  
-### Multi-Environment Promotion Model (DEV → UAT → PROD)
+## Multi-Environment Promotion Model (DEV → UAT → PROD)
 
 ---
 
-## DIA-Datalake DevOps Process  
-Releasing to UAT and PROD with the same release  
+## Overview
 
-**Pro:** No re-deployment and low operational complexity  
-**Con:** Non-production-ready code can exist in `main`, but is not triggered without release tags  
+This repository documents a branch-driven CI/CD architecture designed to promote immutable artifacts across multiple environments:
+
+**DEV → UAT → PROD**
+
+The model enforces:
+
+- Build once
+- Promote the same artifact
+- Prevent environment drift
+- Maintain controlled release governance
+
+---
+
+## DIA-Datalake DevOps Release Model
+
+**Strategy:**  
+Release to UAT and PROD using the same built artifact.
+
+**Advantages**
+- No rebuild between environments
+- Reduced deployment complexity
+- Consistent binary across all stages
+
+**Consideration**
+- Code may exist in `main` that is not yet production-triggered without formal promotion controls
+
+---
 
 ## System Architecture
 
@@ -15,52 +39,69 @@ Releasing to UAT and PROD with the same release
   <img src="assets/CICD_Basic.png" width="1000"/>
 </p>
 
-## Promotion Lifecycle
+---
 
-The pipeline follows a **branch-driven promotion model** with three long-lived branches: `dev`, `uat` and `main`.  Each branch maps directly to an environment and triggers the appropriate deployment on every push.
+# Promotion Lifecycle
 
-### 1. Feature Development
+The pipeline follows a **branch-based promotion model** using three long-lived branches:
 
-* Developers create `feature/*` branches.  
-* Pull Requests trigger CI validation (unit tests, linting, and security scanning).  
-* After approval, changes merge into the corresponding environment branch (`dev`, `uat` or `main`).  
+- `dev`
+- `uat`
+- `main`
 
-### 2. Continuous DEV Deployment
-
-* Every merge into the `dev` branch automatically deploys to **DEV**.  
-* DEV acts as the continuous integration playground where all merged work is immediately available for testing.  
-
-### 3. UAT Deployment
-
-* Once DEV testing is complete, a feature branch is promoted to the `uat` branch via a pull request.  
-* A push to the `uat` branch triggers deployment of the same built artifact to **UAT**.  
-* Business stakeholders validate the changes and provide sign-off.  
-
-### 4. Production Deployment
-
-* After UAT sign-off, the same commit is promoted to the `main` branch.  
-* A push to the `main` branch triggers deployment of the previously built artifact to **PROD**.  
-* There is **no rebuild** between environments — the binary produced by the build pipeline is immutable and promoted through DEV → UAT → PROD.  
+Each branch maps directly to an environment and triggers deployment on push.
 
 ---
 
-## Developer Interaction Flow
+## 1. Feature Development
+
+- Developers create `feature/*` branches.
+- Pull Requests trigger CI validation (linting, testing, security scanning).
+- Approved changes merge into environment branches.
+
+---
+
+## 2. Continuous DEV Deployment
+
+- Push to `dev` → automatic deployment to DEV.
+- DEV serves as the integration playground.
+- All merged work becomes immediately testable.
+
+---
+
+## 3. UAT Promotion
+
+- Selected features are promoted via PR into `uat`.
+- Push to `uat` triggers deployment to UAT.
+- Business validation and sign-off occur here.
+
+---
+
+## 4. Production Release
+
+- Approved commits are promoted into `main`.
+- Push to `main` deploys the exact previously built artifact to PROD.
+- No rebuild occurs.
+
+This ensures immutability and traceability across environments.
+
+---
+
+# Developer Interaction Flow
 
 <table>
 <tr>
 <td width="55%" valign="top">
 
-### Release Model Overview
+### Release Behavior
 
-* Developers create `feature/*` branches.  
-* Pull Requests trigger CI validation.  
-* Approved changes merge into the **environment branches** (`dev`, `uat`, `main`).  
-* **DEV** auto-deploys from the `dev` branch on every push.  
-* **UAT** deployments occur on pushes to the `uat` branch.  
-* **PROD** deployments occur on pushes to the `main` branch.  
-* Business sign-off on the UAT environment is required before promoting to PROD.  
+- `feature/*` → PR → environment branch
+- Push to `dev` → Deploy DEV
+- Push to `uat` → Deploy UAT
+- Push to `main` → Deploy PROD
+- UAT sign-off gates production
 
-This branch-based model maintains a single source of truth while avoiding environment drift.  Artifacts are built once and promoted, not rebuilt, ensuring consistency across environments.
+This guarantees artifact consistency and controlled promotion.
 
 </td>
 
@@ -74,28 +115,25 @@ This branch-based model maintains a single source of truth while avoiding enviro
 
 ---
 
-## Data Engineer Interaction Flow
+# Data Engineer Promotion Funnel
 
 <table>
 <tr>
 <td width="55%" valign="top">
 
-### Release Progression Model
+### Environment Flow
 
-* Multiple features may coexist in the **DEV** environment simultaneously.  
-* All merged features automatically deploy to **DEV** when pushed to the `dev` branch.  
-* A subset of completed features is selected for **UAT** and merged into the `uat` branch.  
-* UAT represents a curated release candidate.  
-* Only approved features progress to **PROD** via a merge into `main`.  
-* Features that are not selected remain in `dev` until they are ready for promotion.  
+DEV  
+→ All merged work
 
-This reflects a **progressive funnel**:
+UAT  
+→ Validated subset
 
-DEV (all merged work)  
-→ UAT (validated subset)  
-→ PROD (approved subset)
+PROD  
+→ Approved subset
 
-Progression is controlled through branch promotion and release ownership; there is no environment drift because the same artifact is promoted through each stage.
+Features remain in `dev` until promoted.  
+Promotion is controlled by branch ownership.
 
 </td>
 
@@ -109,67 +147,96 @@ Progression is controlled through branch promotion and release ownership; there 
 
 ---
 
-## GitHub Actions Workflow Architecture
+# GitHub Actions Workflow Architecture
 
-The CI/CD process is codified through a set of reusable GitHub Actions workflows under `.github/workflows/`.  Each workflow has a distinct responsibility — versioning, building, deploying or preparing the container environment — and they work together to promote an immutable artifact across DEV, UAT and PROD.
+The CI/CD process is implemented through reusable GitHub Actions workflows under:
 
-| Workflow file | Purpose |
-|---------------|---------|
-| `dbr.yml` | **Orchestrator.** Runs on pushes to the `dev`, `uat` and `main` branches. It delegates to the version, build and deploy workflows to execute the appropriate steps for the target environment. |
-| `version-create.yml` | **Version generator.** Computes a semantic version based on the current date or a supplied input and exposes it as an output for downstream jobs. |
-| `dbr-build.yml` | **Build pipeline.** Uses a containerised Databricks CLI environment to package notebooks and jobs into a versioned ZIP file, then uploads the bundle to the artifact repository. Outputs the generated package name. |
-| `dbr-deploy.yml` | **Deployment pipeline.** Retrieves a published bundle from the artifact repository and deploys it to the Databricks workspace corresponding to the specified environment using the Databricks CLI. |
-| `docker-build.yml` | **Tooling image build.** Builds and pushes the Databricks CLI Docker image used by the build workflow, ensuring a consistent runtime across CI jobs. |
+`.github/workflows/`
 
-### Orchestration Flow
-
-1. **Push event** – When code is pushed to `dev`, `uat` or `main`, the `dbr.yml` workflow is triggered automatically.
-2. **Version generation** – The orchestrator calls `version-create.yml` to compute a unique version identifier.
-3. **Artifact build** – It then invokes `dbr-build.yml`, passing the version and environment.  This job packages the Databricks notebooks/jobs and uploads the bundle to the artifact repository.
-4. **Environment deployment** – Finally, `dbr.yml` calls `dbr-deploy.yml` to download the exact bundle and deploy it to the appropriate Databricks workspace (DEV, UAT or PROD).  No rebuild occurs during deployment.
-5. **Container preparation** – The `docker-build.yml` workflow can be run as needed to update the Databricks CLI container image used in the build step.
-
-The combination of these workflows enforces the core DevOps principles highlighted earlier: **build once, promote the same artifact**, and **isolate environments via controlled branch promotion**.
-
-You can explore the workflow definitions directly in this repository:
-
-- [`dbr.yml`](./.github/workflows/dbr.yml)
-- [`version-create.yml`](./.github/workflows/version_create.yml)
-- [`dbr-build.yml`](./.github/workflows/dbr-build.yml)
-- [`dbr-deploy.yml`](./.github/workflows/dbr-deploy.yml)
-- [`docker-build.yml`](./.github/workflows/docker-build.yml)
+Each workflow has a single responsibility.
 
 ---
 
-## Example Implementation Repositories
+## Workflow Responsibilities
 
-This documentation repository also contains **two sample codebases** under the `ADF-CICD-dev` and `databrickscicd-dev_collaboration` directories.  These folders are **vendored** snapshots of small demonstration projects that illustrate how the CI/CD patterns described above can be applied to real workloads.  Keeping the samples in separate subdirectories preserves the original code while allowing you to inspect and learn from complete, working implementations.
+| Workflow | Responsibility |
+|-----------|---------------|
+| `dbr.yml` | Orchestrator triggered on push to `dev`, `uat`, `main` |
+| `version_create.yml` | Generates a semantic version |
+| `dbr-build.yml` | Packages notebooks/jobs into a versioned artifact |
+| `dbr-deploy.yml` | Deploys a previously built artifact to target environment |
+| `docker-build.yml` | Builds the Databricks CLI Docker image |
 
-### `ADF-CICD-dev` – Azure Data Factory sample
+---
 
-This folder contains a lightweight Azure Data Factory project used to demonstrate ADF CI/CD:
+# Orchestration Flow
 
-* **Project structure:** JSON definitions for your Data Factory, datasets, linked services and pipelines live under `factory/`, `dataset/`, `linkedService/` and `pipeline/`.  For example, the `pipeline` directory includes a simple copy pipeline and a wait activity.
-* **Build utilities:** The `build/` subdirectory holds a small Node script that uses the `@microsoft/azure-data-factory-utilities` package to export the factory as an ARM template.  This script is invoked from the CI pipeline.
-* **GitHub workflow:** A sample workflow in `.github/workflows/dev.yml` validates the ADF definitions, exports the ARM template, uploads it to the artifact repository and deploys it to a Data Factory instance.  This mirrors the `dev` branch deployment described in the promotion model.
-* **Template metadata:** Parameter and publish configuration files (`arm-template-parameters-definition.json`, `publish_config.json`) define how the exported ARM template should be parameterised and published.
+1. Push to environment branch
+2. `dbr.yml` triggers
+3. `version_create.yml` generates version
+4. `dbr-build.yml` builds artifact
+5. `dbr-deploy.yml` deploys artifact
+6. No rebuild between environments
 
-Together, these files show how to package and deploy ADF resources in a repeatable, automated manner.
+This enforces:
 
-### `databrickscicd-dev_collaboration` – Databricks bundle sample
+- Artifact immutability
+- Environment isolation
+- Controlled promotion
 
-This directory holds a Databricks CI/CD example built around Databricks bundles and JFrog Artifactory:
+---
 
-* **Bundle configuration:** The root `databricks.yml` defines a bundle named `databricks_cicd_bundle`, sets a workspace root and declares an `env_name` variable.  It lists which files should be synchronised to Databricks and enumerates the available environments.
-* **Environment definitions:** Under `bundle_config/` you’ll find YAML files (`dev.yml`, `uat.yml`, `prod.yml`) that define the Databricks jobs and DLT pipelines for each environment.  These files specify the cluster size, notebook paths and pipeline configuration for DEV, UAT and PROD respectively.
-* **Notebooks:** Example notebooks live in the `Notebooks/` folder.  These are packaged into the bundle and deployed to the workspace by the CI pipeline.
-* **Workflows:** A set of GitHub Actions workflows demonstrate a basic promotion pipeline for Databricks:
-  * `deploy-dev.yml` deploys the bundle to a DEV workspace on pushes to the `dev_collaboration` branch.
-  * `release-build.yml` packages the bundle and uploads it to Artifactory when a `release/*` branch is updated.
-  * `release-deploy.yml` downloads the packaged bundle and deploys it to the UAT workspace.
-  * `prod-build.yml` and `prod-deploy.yml` handle packaging and deploying the bundle to PROD.
-* **Code scanning:** A composite action in `.github/actions/code-scan` installs the `bandit` and `safety` security scanners and runs them against the codebase during the build.
+# Example Implementation Repositories
 
-This sample shows how to structure a Databricks project for multi-environment deployment using the **build once, promote everywhere** approach described earlier.
+This repository includes two reference implementations:
 
-These examples are intentionally kept simple and sanitised.  They are provided as reference implementations; feel free to explore the source code under each directory to see how the CI/CD workflow definitions map to actual deployment artefacts.
+- `ADF-CICD-dev`
+- `databrickscicd-dev_collaboration`
+
+These are sanitized example projects demonstrating how the architecture applies to real workloads.
+
+---
+
+## ADF-CICD-dev (Azure Data Factory)
+
+Demonstrates CI/CD for Azure Data Factory.
+
+Includes:
+
+- Factory definitions (`factory/`, `pipeline/`, `dataset/`)
+- ARM template export utilities
+- GitHub workflow for validation + deployment
+- Parameterization files
+
+Illustrates exporting, packaging, and deploying ADF resources.
+
+---
+
+## databrickscicd-dev_collaboration (Databricks Bundle)
+
+Demonstrates CI/CD using Databricks bundles.
+
+Includes:
+
+- `databricks.yml` bundle definition
+- Environment configs (`dev.yml`, `uat.yml`, `prod.yml`)
+- Example notebooks
+- Promotion workflows
+- Security scanning via composite GitHub Action
+
+Shows multi-environment Databricks promotion using build-once methodology.
+
+---
+
+# Design Principles Enforced
+
+- Build once, promote everywhere
+- Branch-based environment control
+- Artifact immutability
+- No environment drift
+- CI validation before promotion
+- Clear separation of build vs deploy responsibilities
+
+---
+
+This repository represents a structured, enterprise-grade CI/CD promotion model suitable for data platform workloads including Azure Data Factory and Databricks.
