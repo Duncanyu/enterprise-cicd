@@ -87,6 +87,16 @@ This ensures immutability and traceability across environments.
 
 ---
 
+# Pipeline Execution Flow
+
+The following sequence diagram illustrates how a push event propagates through versioning, build, artifact storage, and deployment.
+
+<p align="center">
+  <img src="assets/mchart_1.png" width="900"/>
+</p>
+
+---
+
 # Developer Interaction Flow
 
 <table>
@@ -112,6 +122,16 @@ This guarantees artifact consistency and controlled promotion.
 </td>
 </tr>
 </table>
+
+---
+
+# Promotion Funnel Visualization
+
+This flow diagram represents branch-based promotion across environments.
+
+<p align="center">
+  <img src="assets/mchart_2.png" width="900"/>
+</p>
 
 ---
 
@@ -171,18 +191,18 @@ Each workflow has a single responsibility.
 
 # Orchestration Flow
 
-1. Push to environment branch
-2. `dbr.yml` triggers
-3. `version_create.yml` generates version
-4. `dbr-build.yml` builds artifact
-5. `dbr-deploy.yml` deploys artifact
-6. No rebuild between environments
+1. Push to environment branch  
+2. `dbr.yml` triggers  
+3. `version_create.yml` generates version  
+4. `dbr-build.yml` builds artifact  
+5. `dbr-deploy.yml` deploys artifact  
+6. No rebuild between environments  
 
 This enforces:
 
-- Artifact immutability
-- Environment isolation
-- Controlled promotion
+- Artifact immutability  
+- Environment isolation  
+- Controlled promotion  
 
 ---
 
@@ -230,12 +250,12 @@ Shows multi-environment Databricks promotion using build-once methodology.
 
 # Design Principles Enforced
 
-- Build once, promote everywhere
-- Branch-based environment control
-- Artifact immutability
-- No environment drift
-- CI validation before promotion
-- Clear separation of build vs deploy responsibilities
+- Build once, promote everywhere  
+- Branch-based environment control  
+- Artifact immutability  
+- No environment drift  
+- CI validation before promotion  
+- Clear separation of build vs deploy responsibilities  
 
 ---
 
